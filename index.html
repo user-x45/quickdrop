@@ -822,7 +822,13 @@ const alertClose = document.getElementById("alertClose");
 const toastEl = document.getElementById("toast");
 const toastText = document.getElementById("toastText");
 
+let intentionalClose = false;
+let reconnectTimer = null;
+
 function connect() {
+  if (document.hidden) return;
+
+  intentionalClose = false;
   ws = new WebSocket(SIGNALING_URL);
 
   ws.addEventListener("open", () => {
@@ -832,8 +838,13 @@ function connect() {
 
   ws.addEventListener("close", () => {
     statusDot.classList.remove("connected");
+    if (intentionalClose) {
+      statusText.textContent = "非表示のため切断しました";
+      return;
+    }
     statusText.textContent = "切断されました。再接続しています…";
-    setTimeout(connect, 2000);
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(connect, 2000);
   });
 
   ws.addEventListener("error", () => {
@@ -845,6 +856,24 @@ function connect() {
     handleSignalingMessage(data);
   });
 }
+
+function disconnect() {
+  intentionalClose = true;
+  clearTimeout(reconnectTimer);
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+    ws.close();
+  }
+  connections.forEach((conn) => conn.pc.close());
+  connections.clear();
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    disconnect();
+  } else {
+    connect();
+  }
+});
 
 function handleSignalingMessage(data) {
   if (data.type === "welcome") {
@@ -1565,7 +1594,7 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-connect();
+if (!document.hidden) connect();
 </script>
 </body>
 </html>
