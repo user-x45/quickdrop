@@ -149,7 +149,8 @@
   }
 
   .peer-node.leaving {
-    animation: fade-out 0.4s ease forwards;
+    animation: vanish 0.5s cubic-bezier(0.4, 0, 1, 1) forwards;
+    pointer-events: none;
   }
 
   .peer-node .glow {
@@ -198,6 +199,24 @@
   @keyframes fade-out {
     from { opacity: 1; transform: scale(1); }
     to { opacity: 0; transform: scale(0.6); }
+  }
+
+  @keyframes vanish {
+    0% {
+      opacity: 1;
+      filter: blur(0);
+      transform: scale(1) translateY(0);
+    }
+    40% {
+      opacity: 0.8;
+      filter: blur(1px);
+      transform: scale(1.05) translateY(-2px);
+    }
+    100% {
+      opacity: 0;
+      filter: blur(6px);
+      transform: scale(0.4) translateY(-18px);
+    }
   }
 
   #log {
@@ -310,6 +329,22 @@
     background: var(--accent);
     width: 0%;
     transition: width 0.15s ease;
+  }
+
+  .transfer-card.transfer-failed {
+    border-color: var(--warn);
+  }
+
+  .transfer-card.transfer-failed .fmeta {
+    color: var(--warn);
+  }
+
+  .transfer-card.transfer-failed .transfer-icon {
+    color: var(--warn);
+  }
+
+  .progress-track.failed .progress-fill {
+    background: var(--warn);
   }
 
   .dl-btn {
@@ -863,7 +898,13 @@ function disconnect() {
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
     ws.close();
   }
-  connections.forEach((conn) => conn.pc.close());
+  connections.forEach((conn) => {
+    if (conn.incoming) {
+      markCardFailed(conn.incoming.card, `${conn.peerName}との接続が切断されました`);
+      conn.incoming = null;
+    }
+    conn.pc.close();
+  });
   connections.clear();
 }
 
@@ -903,7 +944,7 @@ function removePeer(id) {
   const el = peerNodeEls.get(id);
   if (el) {
     el.classList.add("leaving");
-    setTimeout(() => el.remove(), 400);
+    setTimeout(() => el.remove(), 500);
     peerNodeEls.delete(id);
   }
   if (peers.size === 0) {
@@ -911,6 +952,10 @@ function removePeer(id) {
   }
   const conn = connections.get(id);
   if (conn) {
+    if (conn.incoming) {
+      markCardFailed(conn.incoming.card, `${conn.peerName}との接続が切断されました`);
+      conn.incoming = null;
+    }
     conn.pc.close();
     connections.delete(id);
   }
@@ -1279,6 +1324,16 @@ function setupDataChannel(entry, peerId) {
   const dc = entry.dataChannel;
   dc.binaryType = "arraybuffer";
 
+  const markInterrupted = () => {
+    const inc = entry.incoming;
+    if (!inc) return;
+    entry.incoming = null;
+    markCardFailed(inc.card, `${entry.peerName}との接続が切断されました`);
+  };
+
+  dc.addEventListener("close", markInterrupted);
+  dc.addEventListener("error", markInterrupted);
+
   dc.addEventListener("message", (event) => {
     if (typeof event.data === "string") {
       let meta;
@@ -1314,6 +1369,23 @@ function setupDataChannel(entry, peerId) {
       entry.incoming = null;
     }
   });
+}
+
+function markCardFailed(card, message) {
+  const fmeta = card.querySelector(".fmeta");
+  if (fmeta) fmeta.textContent = message;
+  const track = card.querySelector(".progress-track");
+  if (track) {
+    track.classList.add("failed");
+  }
+  card.classList.add("transfer-failed");
+  const icon = card.querySelector(".transfer-icon");
+  if (icon) {
+    icon.replaceChildren();
+    const i = document.createElement("i");
+    i.className = "fa-solid fa-triangle-exclamation";
+    icon.appendChild(i);
+  }
 }
 
 function finalizeIncoming(inc, peerName) {
