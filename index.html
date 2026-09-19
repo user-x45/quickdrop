@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
 <style>
   :root {
     --bg: #0F1512;
@@ -124,10 +125,10 @@
 
   .peer-node {
     position: absolute;
-    width: 124px;
-    height: 124px;
-    margin-left: -62px;
-    margin-top: -62px;
+    width: 128px;
+    height: 128px;
+    margin-left: -64px;
+    margin-top: -64px;
     border-radius: 50%;
     background: var(--panel-raised);
     border: 1px solid var(--line);
@@ -135,7 +136,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 4px;
     cursor: pointer;
     animation: drift 6s ease-in-out infinite, fade-in 0.5s ease;
     transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
@@ -163,8 +164,9 @@
     font-size: 16px;
     font-weight: 500;
     text-align: center;
-    padding: 0 8px;
-    line-height: 1.35;
+    padding: 0 4px;
+    line-height: 1.3;
+    white-space: nowrap;
   }
 
   @keyframes drift {
@@ -189,9 +191,10 @@
     max-width: 620px;
     margin: 0 auto;
     width: 100%;
-    max-height: 22vh;
+    max-height: 200px;
     overflow-y: auto;
     padding: 0 24px 16px;
+    overscroll-behavior: contain;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -211,23 +214,54 @@
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: 14px;
-    padding: 14px 16px;
+    padding: 10px 14px;
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-shrink: 0;
     animation: fade-in 0.4s ease;
   }
 
   .transfer-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
     background: var(--panel-raised);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
+    font-size: 24px;
+    color: var(--accent);
     flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .transfer-icon img,
+  .transfer-icon video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    background: var(--panel-raised);
+  }
+
+  .transfer-icon .badge {
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(15, 21, 18, 0.72);
+    color: var(--text);
+    font-size: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-left: 1px;
   }
 
   .transfer-info {
@@ -356,8 +390,9 @@
   }
 
   .drop-zone .dz-icon {
-    font-size: 34px;
-    margin-bottom: 8px;
+    font-size: 36px;
+    margin-bottom: 10px;
+    color: var(--accent);
   }
 
   .drop-zone .dz-text {
@@ -390,13 +425,14 @@
     header p { font-size: 14px; line-height: 1.5; }
     .status-row { font-size: 14px; margin-top: 6px; }
     .empty-hint { font-size: 16px; }
-    .peer-node { width: 104px; height: 104px; margin-left: -52px; margin-top: -52px; }
+    .peer-node { width: 108px; height: 108px; margin-left: -54px; margin-top: -54px; }
     .peer-node .peer-name { font-size: 14px; }
   }
 
   @media (max-height: 640px) {
     header p { display: none; }
     header { padding-top: 12px; }
+    #log { max-height: 150px; }
   }
 </style>
 </head>
@@ -427,7 +463,7 @@
     <h2><span class="to-name" id="sheetToName" style="white-space:nowrap">端末</span><span style="white-space:nowrap">にファイルを送る</span></h2>
     <p class="desc">画像・動画・PDFなど、ファイルの種類は問いません。</p>
     <div class="drop-zone" id="dropZone">
-      <div class="dz-icon">📤</div>
+      <div class="dz-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
       <div class="dz-text">タップしてファイルを選ぶ</div>
       <div class="dz-sub">またはここにドラッグ＆ドロップ</div>
     </div>
@@ -443,6 +479,11 @@ const SIGNALING_URL = (() => {
 })();
 
 const CHUNK_SIZE = 16 * 1024;
+
+const ADJECTIVE_LIST = [
+  "静かな", "素早い", "明るい", "涼しい", "温かい", "小さな", "大きな", "遠い",
+  "近い", "澄んだ", "柔らかい", "鋭い", "陽気な", "穏やかな", "軽やかな", "力強い"
+];
 
 let ws = null;
 let myId = null;
@@ -529,7 +570,7 @@ function removePeer(id) {
 }
 
 function nodeSize() {
-  return window.innerWidth <= 480 ? 104 : 124;
+  return window.innerWidth <= 480 ? 108 : 128;
 }
 
 function pickPosition() {
@@ -572,14 +613,19 @@ function renderPeerNode(id, name) {
   el.style.animationDelay = (Math.random() * 3) + "s";
   el.innerHTML = '<div class="glow"></div><div class="peer-name"></div>';
   const nameEl = el.querySelector(".peer-name");
-  const m = name.match(/^(.*?)(\d+)$/);
-  if (m) {
-    nameEl.appendChild(document.createTextNode(m[1]));
-    nameEl.appendChild(document.createElement("br"));
-    nameEl.appendChild(document.createTextNode(m[2]));
+  const adj = ADJECTIVE_LIST.find((a) => name.startsWith(a));
+  const rest = adj ? name.slice(adj.length) : name;
+  const numMatch = rest.match(/^(.*?)(\d+)$/);
+  const lines = adj ? [adj] : [];
+  if (numMatch) {
+    lines.push(numMatch[1], numMatch[2]);
   } else {
-    nameEl.textContent = name;
+    lines.push(rest);
   }
+  lines.filter(Boolean).forEach((line, i) => {
+    if (i > 0) nameEl.appendChild(document.createElement("br"));
+    nameEl.appendChild(document.createTextNode(line));
+  });
   el.addEventListener("click", () => openUploadSheet(id, name));
   field.appendChild(el);
   peerNodeEls.set(id, el);
@@ -670,7 +716,8 @@ async function sendFile(peerId, file) {
   }
 
   const startTransfer = () => {
-    const card = createTransferCard(file.name, file.size, "送信中", true);
+    const card = createTransferCard(file.name, file.size, "送信中", true, file.type);
+    attachPreview(card, file.name, file.type, file);
     beginSending(entry, file, card);
   };
 
@@ -750,7 +797,7 @@ function setupDataChannel(entry, peerId) {
           mime: meta.mime,
           chunks: [],
           received: 0,
-          card: createTransferCard(meta.name, meta.size, `${entry.peerName}から受信中`, true),
+          card: createTransferCard(meta.name, meta.size, `${entry.peerName}から受信中`, true, meta.mime),
         };
       }
       return;
@@ -772,13 +819,14 @@ function finalizeIncoming(inc, peerName) {
   const blob = new Blob(inc.chunks, { type: inc.mime || "application/octet-stream" });
   const url = URL.createObjectURL(blob);
   const card = inc.card;
+  attachPreview(card, inc.name, inc.mime, blob);
   card.querySelector(".fmeta").textContent = `${peerName}から受信完了`;
   const track = card.querySelector(".progress-track");
   if (track) track.remove();
 
   const dlBtn = document.createElement("button");
   dlBtn.className = "dl-btn";
-  dlBtn.textContent = "保存する";
+  dlBtn.innerHTML = '<i class="fa-solid fa-download"></i> 保存する';
   dlBtn.addEventListener("click", () => {
     const a = document.createElement("a");
     a.href = url;
@@ -790,12 +838,76 @@ function finalizeIncoming(inc, peerName) {
   card.appendChild(dlBtn);
 }
 
-function iconForMime(name) {
-  const ext = name.split(".").pop().toLowerCase();
-  if (["jpg", "jpeg", "png", "gif", "webp", "heic"].includes(ext)) return "🖼️";
-  if (["mp4", "mov", "webm", "avi"].includes(ext)) return "🎞️";
-  if (ext === "pdf") return "📄";
-  return "📦";
+const IMAGE_EXTS = ["jpg", "jpeg", "png", "gif", "webp", "avif", "bmp", "svg", "heic", "heif"];
+const VIDEO_EXTS = ["mp4", "mov", "webm", "m4v", "avi", "mkv", "ogv"];
+
+function extOf(name) {
+  const i = name.lastIndexOf(".");
+  return i === -1 ? "" : name.slice(i + 1).toLowerCase();
+}
+
+function kindOf(name, mime) {
+  const ext = extOf(name);
+  if ((mime && mime.startsWith("image/")) || IMAGE_EXTS.includes(ext)) return "image";
+  if ((mime && mime.startsWith("video/")) || VIDEO_EXTS.includes(ext)) return "video";
+  return "file";
+}
+
+function faIconFor(name, mime) {
+  const kind = kindOf(name, mime);
+  const ext = extOf(name);
+  if (kind === "image") return "fa-regular fa-image";
+  if (kind === "video") return "fa-solid fa-film";
+  if (ext === "pdf") return "fa-regular fa-file-pdf";
+  if (["doc", "docx"].includes(ext)) return "fa-regular fa-file-word";
+  if (["xls", "xlsx", "csv"].includes(ext)) return "fa-regular fa-file-excel";
+  if (["ppt", "pptx", "key"].includes(ext)) return "fa-regular fa-file-powerpoint";
+  if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) return "fa-regular fa-file-zipper";
+  if (["mp3", "wav", "m4a", "flac", "aac", "ogg"].includes(ext)) return "fa-regular fa-file-audio";
+  if (["txt", "md", "rtf"].includes(ext)) return "fa-regular fa-file-lines";
+  if (["js", "ts", "html", "css", "json", "py", "java", "c", "cpp", "go", "rs", "sh"].includes(ext)) return "fa-regular fa-file-code";
+  return "fa-regular fa-file";
+}
+
+function setIcon(iconEl, name, mime) {
+  iconEl.replaceChildren();
+  const i = document.createElement("i");
+  i.className = faIconFor(name, mime);
+  iconEl.appendChild(i);
+}
+
+function attachPreview(card, name, mime, source) {
+  const iconEl = card.querySelector(".transfer-icon");
+  const kind = kindOf(name, mime);
+  if (kind === "file") return null;
+
+  const url = URL.createObjectURL(source);
+  const fallback = () => setIcon(iconEl, name, mime);
+
+  if (kind === "image") {
+    const img = document.createElement("img");
+    img.alt = "";
+    img.addEventListener("load", () => {
+      iconEl.replaceChildren(img);
+    });
+    img.addEventListener("error", fallback);
+    img.src = url;
+  } else {
+    const video = document.createElement("video");
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+    video.addEventListener("loadeddata", () => {
+      iconEl.replaceChildren(video);
+      const badge = document.createElement("span");
+      badge.className = "badge";
+      badge.innerHTML = '<i class="fa-solid fa-play"></i>';
+      iconEl.appendChild(badge);
+    });
+    video.addEventListener("error", fallback);
+    video.src = url + "#t=0.1";
+  }
+  return url;
 }
 
 function formatSize(bytes) {
@@ -804,11 +916,11 @@ function formatSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
-function createTransferCard(name, size, statusLabel, withProgress) {
+function createTransferCard(name, size, statusLabel, withProgress, mime) {
   const card = document.createElement("div");
   card.className = "transfer-card";
   card.innerHTML = `
-    <div class="transfer-icon">${iconForMime(name)}</div>
+    <div class="transfer-icon"><i class="${faIconFor(name, mime)}"></i></div>
     <div class="transfer-info">
       <div class="fname">${escapeHtml(name)}</div>
       <div class="fmeta">${statusLabel} ・ ${formatSize(size)}</div>
