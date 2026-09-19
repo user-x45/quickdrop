@@ -870,9 +870,37 @@ const toastText = document.getElementById("toastText");
 
 let intentionalClose = false;
 let reconnectTimer = null;
+let heartbeatTimer = null;
+let heartbeatTimeoutTimer = null;
+
+const HEARTBEAT_INTERVAL_MS = 5000;
+const HEARTBEAT_TIMEOUT_MS = 4000;
+
+function startHeartbeat() {
+  stopHeartbeat();
+  heartbeatTimer = setInterval(() => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    try {
+      ws.send(JSON.stringify({ type: "ping" }));
+    } catch (err) {
+      return;
+    }
+    clearTimeout(heartbeatTimeoutTimer);
+    heartbeatTimeoutTimer = setTimeout(() => {
+      if (ws) ws.close();
+    }, HEARTBEAT_TIMEOUT_MS);
+  }, HEARTBEAT_INTERVAL_MS);
+}
+
+function stopHeartbeat() {
+  clearInterval(heartbeatTimer);
+  clearTimeout(heartbeatTimeoutTimer);
+  heartbeatTimer = null;
+  heartbeatTimeoutTimer = null;
+}
 
 function connect() {
-  if (document.hidden) return;
+  if (document.hidden || !navigator.onLine) return;
 
   intentionalClose = false;
   ws = new WebSocket(SIGNALING_URL + "?clientKey=" + encodeURIComponent(CLIENT_KEY));
@@ -880,10 +908,12 @@ function connect() {
   ws.addEventListener("open", () => {
     statusDot.classList.add("connected");
     statusText.textContent = "接続中";
+    startHeartbeat();
   });
 
   ws.addEventListener("close", () => {
     statusDot.classList.remove("connected");
+    stopHeartbeat();
     clearAllPeers();
     if (intentionalClose) {
       statusText.textContent = "非表示のため切断しました";
@@ -900,6 +930,10 @@ function connect() {
 
   ws.addEventListener("message", (event) => {
     const data = JSON.parse(event.data);
+    if (data.type === "pong") {
+      clearTimeout(heartbeatTimeoutTimer);
+      return;
+    }
     handleSignalingMessage(data);
   });
 }
@@ -907,6 +941,7 @@ function connect() {
 function disconnect() {
   intentionalClose = true;
   clearTimeout(reconnectTimer);
+  stopHeartbeat();
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
     ws.close();
   }
@@ -919,6 +954,16 @@ document.addEventListener("visibilitychange", () => {
   } else {
     connect();
   }
+});
+
+window.addEventListener("offline", () => {
+  statusText.textContent = "ネットワークが切断されました";
+  statusDot.classList.remove("connected");
+  disconnect();
+});
+
+window.addEventListener("online", () => {
+  if (!document.hidden) connect();
 });
 
 function handleSignalingMessage(data) {
