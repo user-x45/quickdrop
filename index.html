@@ -176,6 +176,20 @@
 
   .peer-node:hover { animation-play-state: paused; }
 
+  .peer-node {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+  }
+
+  .peer-node.pressing {
+    transform: scale(0.94);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(127, 224, 181, 0.18), 0 0 28px rgba(127, 224, 181, 0.22);
+    animation-play-state: paused;
+  }
+
   @keyframes fade-in {
     from { opacity: 0; transform: scale(0.7); }
     to { opacity: 1; transform: scale(1); }
@@ -419,6 +433,265 @@
 
   input[type=file] { display: none; }
 
+  .sheet-tabs {
+    display: flex;
+    gap: 6px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 4px;
+    margin: 0 0 18px;
+  }
+
+  .sheet-tab {
+    flex: 1;
+    background: none;
+    border: none;
+    border-radius: 10px;
+    padding: 11px 8px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--sub);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .sheet-tab i { margin-right: 6px; }
+
+  .sheet-tab.active {
+    background: var(--panel-raised);
+    color: var(--accent);
+  }
+
+  .sheet-pane { display: none; }
+  .sheet-pane.active { display: block; }
+
+  .msg-input {
+    width: 100%;
+    min-height: 120px;
+    max-height: 32vh;
+    resize: none;
+    background: var(--bg);
+    color: var(--text);
+    border: 1.5px solid var(--line);
+    border-radius: 16px;
+    padding: 14px 16px;
+    font-family: inherit;
+    font-size: 17px;
+    line-height: 1.6;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  .msg-input:focus { border-color: var(--accent-dim); }
+  .msg-input::placeholder { color: var(--sub); opacity: 0.7; }
+
+  .msg-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .msg-hint {
+    font-size: 14px;
+    color: var(--sub);
+    line-height: 1.4;
+  }
+
+  .send-btn {
+    background: var(--accent);
+    color: #0F1512;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 22px;
+    font-family: inherit;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .send-btn:hover { opacity: 0.85; }
+  .send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .send-btn i { margin-right: 6px; }
+
+  .alert-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 21, 18, 0.78);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 40;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  .alert-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .alert-box {
+    width: 100%;
+    max-width: 480px;
+    max-height: 82vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    border: 1px solid var(--accent-dim);
+    border-radius: 22px;
+    padding: 22px 22px 18px;
+    box-shadow: 0 0 40px rgba(127, 224, 181, 0.12), 0 20px 60px rgba(0, 0, 0, 0.5);
+    transform: translateY(14px) scale(0.96);
+    transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+
+  .alert-overlay.open .alert-box { transform: translateY(0) scale(1); }
+
+  .alert-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .alert-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--panel-raised);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .alert-from {
+    font-size: 15px;
+    color: var(--sub);
+    line-height: 1.4;
+    min-width: 0;
+  }
+
+  .alert-from strong {
+    display: block;
+    font-size: 18px;
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .alert-count {
+    margin-left: auto;
+    font-size: 14px;
+    color: var(--sub);
+    background: var(--panel-raised);
+    border-radius: 999px;
+    padding: 4px 12px;
+    flex-shrink: 0;
+  }
+
+  .alert-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 18px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .alert-body a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-color: var(--accent-dim);
+    text-underline-offset: 3px;
+    background: rgba(127, 224, 181, 0.1);
+    border-radius: 6px;
+    padding: 1px 4px;
+    margin: 0 -1px;
+    -webkit-tap-highlight-color: rgba(127, 224, 181, 0.25);
+  }
+
+  .alert-body a:active { background: rgba(127, 224, 181, 0.28); }
+
+  .alert-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .alert-btn {
+    flex: 1;
+    background: var(--panel-raised);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 13px 10px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s ease, background 0.2s ease;
+  }
+
+  .alert-btn { white-space: nowrap; }
+  .alert-btn i { margin-right: 6px; }
+  .alert-btn:hover { opacity: 0.85; }
+
+  .alert-btn.primary {
+    background: var(--accent);
+    color: #0F1512;
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+
+  .alert-btn.done {
+    background: var(--accent-dim);
+    color: #0F1512;
+    border-color: var(--accent-dim);
+  }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    transform: translate(-50%, 20px);
+    background: var(--panel-raised);
+    color: var(--text);
+    border: 1px solid var(--accent-dim);
+    border-radius: 999px;
+    padding: 11px 20px;
+    font-size: 16px;
+    z-index: 60;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    white-space: nowrap;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  .toast i { color: var(--accent); margin-right: 8px; }
+
   @media (max-width: 480px) {
     header { padding: 14px 18px 2px; }
     header h1 { font-size: 26px; }
@@ -457,17 +730,47 @@
 
 <div id="log"></div>
 
+<div class="alert-overlay" id="alertOverlay" role="alertdialog" aria-modal="true" aria-labelledby="alertFromName">
+  <div class="alert-box">
+    <div class="alert-head">
+      <div class="alert-icon"><i class="fa-regular fa-message"></i></div>
+      <div class="alert-from">メッセージが届きました<strong id="alertFromName">—</strong></div>
+      <span class="alert-count" id="alertCount" hidden></span>
+    </div>
+    <div class="alert-body" id="alertBody"></div>
+    <div class="alert-actions">
+      <button class="alert-btn" id="alertCopy" type="button"><i class="fa-regular fa-copy"></i>コピー</button>
+      <button class="alert-btn primary" id="alertClose" type="button">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="fa-solid fa-circle-check"></i><span id="toastText"></span></div>
+
 <div class="overlay" id="overlay">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <h2><span class="to-name" id="sheetToName" style="white-space:nowrap">端末</span><span style="white-space:nowrap">にファイルを送る</span></h2>
-    <p class="desc">画像・動画・PDFなど、ファイルの種類は問いません。</p>
-    <div class="drop-zone" id="dropZone">
-      <div class="dz-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
-      <div class="dz-text">タップしてファイルを選ぶ</div>
-      <div class="dz-sub">またはここにドラッグ＆ドロップ</div>
+    <h2><span class="to-name" id="sheetToName" style="white-space:nowrap">端末</span><span style="white-space:nowrap" id="sheetTitleTail">にファイルを送る</span></h2>
+    <div class="sheet-tabs">
+      <button class="sheet-tab active" id="tabFile" type="button"><i class="fa-regular fa-file"></i>ファイル</button>
+      <button class="sheet-tab" id="tabMsg" type="button"><i class="fa-regular fa-comment-dots"></i>メッセージ</button>
     </div>
-    <input type="file" id="fileInput">
+    <div class="sheet-pane active" id="paneFile">
+      <p class="desc">画像・動画・PDFなど、ファイルの種類は問いません。</p>
+      <div class="drop-zone" id="dropZone">
+        <div class="dz-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+        <div class="dz-text">タップしてファイルを選ぶ</div>
+        <div class="dz-sub">またはここにドラッグ＆ドロップ</div>
+      </div>
+      <input type="file" id="fileInput">
+    </div>
+    <div class="sheet-pane" id="paneMsg">
+      <textarea class="msg-input" id="msgInput" rows="4" maxlength="5000" placeholder="メッセージやURLを入力"></textarea>
+      <div class="msg-foot">
+        <span class="msg-hint">Enterで改行できます</span>
+        <button class="send-btn" id="msgSend" type="button" disabled><i class="fa-solid fa-paper-plane"></i>送信</button>
+      </div>
+    </div>
     <button class="sheet-close" id="sheetClose">閉じる</button>
   </div>
 </div>
@@ -503,6 +806,21 @@ const sheetToName = document.getElementById("sheetToName");
 const dropZone = document.getElementById("dropZone");
 const fileInput = document.getElementById("fileInput");
 const sheetClose = document.getElementById("sheetClose");
+const sheetTitleTail = document.getElementById("sheetTitleTail");
+const tabFile = document.getElementById("tabFile");
+const tabMsg = document.getElementById("tabMsg");
+const paneFile = document.getElementById("paneFile");
+const paneMsg = document.getElementById("paneMsg");
+const msgInput = document.getElementById("msgInput");
+const msgSend = document.getElementById("msgSend");
+const alertOverlay = document.getElementById("alertOverlay");
+const alertFromName = document.getElementById("alertFromName");
+const alertCount = document.getElementById("alertCount");
+const alertBody = document.getElementById("alertBody");
+const alertCopy = document.getElementById("alertCopy");
+const alertClose = document.getElementById("alertClose");
+const toastEl = document.getElementById("toast");
+const toastText = document.getElementById("toastText");
 
 function connect() {
   ws = new WebSocket(SIGNALING_URL);
@@ -626,20 +944,127 @@ function renderPeerNode(id, name) {
     if (i > 0) nameEl.appendChild(document.createElement("br"));
     nameEl.appendChild(document.createTextNode(line));
   });
-  el.addEventListener("click", () => openUploadSheet(id, name));
+  bindPeerGestures(el, id, name);
   field.appendChild(el);
   peerNodeEls.set(id, el);
 }
 
-function openUploadSheet(id, name) {
+const LONG_PRESS_MS = 500;
+const MOVE_TOLERANCE = 10;
+
+function bindPeerGestures(el, id, name) {
+  let timer = null;
+  let startX = 0;
+  let startY = 0;
+  let longPressed = false;
+
+  const cancel = () => {
+    clearTimeout(timer);
+    timer = null;
+    el.classList.remove("pressing");
+  };
+
+  el.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    longPressed = false;
+    startX = e.clientX;
+    startY = e.clientY;
+    el.classList.add("pressing");
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      longPressed = true;
+      el.classList.remove("pressing");
+      if (navigator.vibrate) navigator.vibrate(30);
+      openSheet(id, name, "message");
+    }, LONG_PRESS_MS);
+  });
+
+  el.addEventListener("pointermove", (e) => {
+    if (timer && Math.hypot(e.clientX - startX, e.clientY - startY) > MOVE_TOLERANCE) cancel();
+  });
+
+  ["pointerup", "pointercancel", "pointerleave"].forEach((type) => {
+    el.addEventListener(type, cancel);
+  });
+
+  el.addEventListener("contextmenu", (e) => e.preventDefault());
+
+  el.addEventListener("click", () => {
+    if (longPressed) {
+      longPressed = false;
+      return;
+    }
+    openSheet(id, name, "file");
+  });
+}
+
+function setSheetMode(mode) {
+  const isMsg = mode === "message";
+  tabFile.classList.toggle("active", !isMsg);
+  tabMsg.classList.toggle("active", isMsg);
+  paneFile.classList.toggle("active", !isMsg);
+  paneMsg.classList.toggle("active", isMsg);
+  sheetTitleTail.textContent = isMsg ? "にメッセージを送る" : "にファイルを送る";
+}
+
+function openSheet(id, name, mode) {
   activeTargetId = id;
   sheetToName.textContent = name;
+  setSheetMode(mode);
   overlay.classList.add("open");
+  if (mode === "message") {
+    setTimeout(() => msgInput.focus(), 320);
+  }
+}
+
+function openUploadSheet(id, name) {
+  openSheet(id, name, "file");
 }
 
 function closeUploadSheet() {
   overlay.classList.remove("open");
+  msgInput.blur();
   activeTargetId = null;
+}
+
+tabFile.addEventListener("click", () => setSheetMode("file"));
+tabMsg.addEventListener("click", () => {
+  setSheetMode("message");
+  setTimeout(() => msgInput.focus(), 50);
+});
+
+function autoGrow() {
+  msgInput.style.height = "auto";
+  msgInput.style.height = Math.min(msgInput.scrollHeight + 2, window.innerHeight * 0.32) + "px";
+}
+
+msgInput.addEventListener("input", () => {
+  msgSend.disabled = msgInput.value.trim().length === 0;
+  autoGrow();
+});
+
+msgInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    submitMessage();
+  }
+});
+
+msgSend.addEventListener("click", submitMessage);
+
+function submitMessage() {
+  const text = msgInput.value.replace(/\r\n/g, "\n").replace(/\s+$/, "");
+  if (!text.trim() || !activeTargetId) return;
+  const targetId = activeTargetId;
+  const targetName = peers.get(targetId)?.name || "端末";
+  sendMessage(targetId, text)
+    .then(() => showToast(`${targetName}に送信しました`))
+    .catch(() => showToast("送信できませんでした", true));
+  msgInput.value = "";
+  msgInput.style.height = "auto";
+  msgSend.disabled = true;
+  closeUploadSheet();
 }
 
 sheetClose.addEventListener("click", closeUploadSheet);
@@ -705,32 +1130,70 @@ function sendSignal(to, payload) {
   ws.send(JSON.stringify({ type: "signal", to, payload }));
 }
 
-async function sendFile(peerId, file) {
+function ensureChannel(peerId) {
   const peerName = peers.get(peerId)?.name || "端末";
   const entry = getOrCreateConnection(peerId, peerName);
 
-  if (!entry.dataChannel) {
+  if (entry.dataChannel && entry.dataChannel.readyState === "open") {
+    return Promise.resolve(entry);
+  }
+  if (entry.opening) return entry.opening;
+
+  if (!entry.dataChannel || entry.dataChannel.readyState === "closed" || entry.dataChannel.readyState === "closing") {
     const dc = entry.pc.createDataChannel("file");
     entry.dataChannel = dc;
     setupDataChannel(entry, peerId);
   }
 
-  const startTransfer = () => {
-    const card = createTransferCard(file.name, file.size, "送信中", true, file.type);
-    attachPreview(card, file.name, file.type, file);
-    beginSending(entry, file, card);
-  };
+  const dc = entry.dataChannel;
+  const alreadyNegotiated = entry.negotiated === true;
 
-  if (entry.dataChannel.readyState === "open") {
-    startTransfer();
-    return;
+  entry.opening = new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      entry.opening = null;
+      reject(new Error("timeout"));
+    }, 15000);
+    dc.addEventListener("open", () => {
+      clearTimeout(timeout);
+      entry.opening = null;
+      resolve(entry);
+    }, { once: true });
+    dc.addEventListener("close", () => {
+      clearTimeout(timeout);
+      entry.opening = null;
+      reject(new Error("closed"));
+    }, { once: true });
+  });
+
+  if (!alreadyNegotiated) {
+    entry.negotiated = true;
+    entry.pc.createOffer()
+      .then((offer) => entry.pc.setLocalDescription(offer).then(() => offer))
+      .then((offer) => sendSignal(peerId, { kind: "offer", sdp: offer }))
+      .catch(() => {
+        entry.negotiated = false;
+      });
   }
 
-  const offer = await entry.pc.createOffer();
-  await entry.pc.setLocalDescription(offer);
-  sendSignal(peerId, { kind: "offer", sdp: offer });
+  return entry.opening;
+}
 
-  entry.dataChannel.addEventListener("open", startTransfer, { once: true });
+async function sendFile(peerId, file) {
+  let entry;
+  try {
+    entry = await ensureChannel(peerId);
+  } catch (err) {
+    showToast("接続できませんでした", true);
+    return;
+  }
+  const card = createTransferCard(file.name, file.size, "送信中", true, file.type);
+  attachPreview(card, file.name, file.type, file);
+  beginSending(entry, file, card);
+}
+
+async function sendMessage(peerId, text) {
+  const entry = await ensureChannel(peerId);
+  entry.dataChannel.send(JSON.stringify({ message: true, text, sentAt: Date.now() }));
 }
 
 function beginSending(entry, file, card) {
@@ -789,7 +1252,16 @@ function setupDataChannel(entry, peerId) {
 
   dc.addEventListener("message", (event) => {
     if (typeof event.data === "string") {
-      const meta = JSON.parse(event.data);
+      let meta;
+      try {
+        meta = JSON.parse(event.data);
+      } catch (err) {
+        return;
+      }
+      if (meta.message && typeof meta.text === "string") {
+        enqueueAlert(entry.peerName, meta.text.slice(0, 5000));
+        return;
+      }
       if (meta.meta) {
         entry.incoming = {
           name: meta.name,
@@ -909,6 +1381,162 @@ function attachPreview(card, name, mime, source) {
   }
   return url;
 }
+
+const URL_PATTERN = /(?:https?:\/\/|www\.)[A-Za-z0-9\-._~:\/?#\[\]@!$&'()*+,;=%]+/gi;
+const TRAILING_PUNCT = /[.,;:!?'*]+$/;
+
+function trimUrl(raw) {
+  let out = raw;
+  for (;;) {
+    const before = out;
+    out = out.replace(TRAILING_PUNCT, "");
+    if (out.endsWith(")") && (out.match(/\(/g) || []).length < (out.match(/\)/g) || []).length) {
+      out = out.slice(0, -1);
+    }
+    if (out === before) break;
+  }
+  return out;
+}
+
+function linkify(container, text) {
+  container.textContent = "";
+  let last = 0;
+  let m;
+  URL_PATTERN.lastIndex = 0;
+  while ((m = URL_PATTERN.exec(text)) !== null) {
+    const raw = trimUrl(m[0]);
+    if (!raw || raw.length < 5) continue;
+
+    if (m.index > last) {
+      container.appendChild(document.createTextNode(text.slice(last, m.index)));
+    }
+
+    const href = /^https?:\/\//i.test(raw) ? raw : "https://" + raw;
+    let safe = null;
+    try {
+      const u = new URL(href);
+      if ((u.protocol === "http:" || u.protocol === "https:") && u.hostname.includes(".")) safe = u.href;
+    } catch (err) {}
+
+    if (safe) {
+      const a = document.createElement("a");
+      a.href = safe;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = raw;
+      container.appendChild(a);
+    } else {
+      container.appendChild(document.createTextNode(raw));
+    }
+
+    const consumedEnd = m.index + raw.length;
+    last = consumedEnd;
+    URL_PATTERN.lastIndex = consumedEnd;
+  }
+  if (last < text.length) {
+    container.appendChild(document.createTextNode(text.slice(last)));
+  }
+}
+
+const alertQueue = [];
+let currentAlert = null;
+
+function enqueueAlert(fromName, text) {
+  alertQueue.push({ fromName, text });
+  if (!currentAlert) showNextAlert();
+  else updateAlertCount();
+}
+
+function updateAlertCount() {
+  if (alertQueue.length > 0) {
+    alertCount.hidden = false;
+    alertCount.textContent = `他${alertQueue.length}件`;
+  } else {
+    alertCount.hidden = true;
+  }
+}
+
+function showNextAlert() {
+  currentAlert = alertQueue.shift() || null;
+  if (!currentAlert) return;
+  alertFromName.textContent = currentAlert.fromName;
+  linkify(alertBody, currentAlert.text);
+  alertBody.scrollTop = 0;
+  resetCopyButton();
+  updateAlertCount();
+  alertOverlay.classList.add("open");
+  if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
+}
+
+function dismissAlert() {
+  alertOverlay.classList.remove("open");
+  currentAlert = null;
+  if (alertQueue.length > 0) {
+    setTimeout(showNextAlert, 260);
+  }
+}
+
+alertClose.addEventListener("click", dismissAlert);
+alertOverlay.addEventListener("click", (e) => {
+  if (e.target === alertOverlay) dismissAlert();
+});
+
+function resetCopyButton() {
+  alertCopy.classList.remove("done");
+  alertCopy.innerHTML = '<i class="fa-regular fa-copy"></i>コピー';
+}
+
+async function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {}
+  }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly", "");
+  ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;";
+  document.body.appendChild(ta);
+  ta.select();
+  ta.setSelectionRange(0, ta.value.length);
+  let ok = false;
+  try {
+    ok = document.execCommand("copy");
+  } catch (err) {}
+  ta.remove();
+  return ok;
+}
+
+alertCopy.addEventListener("click", async () => {
+  if (!currentAlert) return;
+  const ok = await copyText(currentAlert.text);
+  if (ok) {
+    alertCopy.classList.add("done");
+    alertCopy.innerHTML = '<i class="fa-solid fa-check"></i>コピー済み';
+    showToast("クリップボードにコピーしました");
+  } else {
+    showToast("コピーできませんでした", true);
+  }
+});
+
+let toastTimer = null;
+
+function showToast(message, isError) {
+  toastText.textContent = message;
+  const icon = toastEl.querySelector("i");
+  icon.className = isError ? "fa-solid fa-triangle-exclamation" : "fa-solid fa-circle-check";
+  icon.style.color = isError ? "var(--warn)" : "var(--accent)";
+  toastEl.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2200);
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  if (alertOverlay.classList.contains("open")) dismissAlert();
+  else if (overlay.classList.contains("open")) closeUploadSheet();
+});
 
 function formatSize(bytes) {
   if (bytes < 1024) return bytes + " B";
