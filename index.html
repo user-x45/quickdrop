@@ -816,6 +816,17 @@ const SIGNALING_URL = (() => {
   return proto + "//quick-drop.user-x45.workers.dev/ws";
 })();
 
+function getClientKey() {
+  let key = sessionStorage.getItem("quickdrop-client-key");
+  if (!key) {
+    key = crypto.randomUUID();
+    sessionStorage.setItem("quickdrop-client-key", key);
+  }
+  return key;
+}
+
+const CLIENT_KEY = getClientKey();
+
 const CHUNK_SIZE = 16 * 1024;
 
 const ADJECTIVE_LIST = [
@@ -864,7 +875,7 @@ function connect() {
   if (document.hidden) return;
 
   intentionalClose = false;
-  ws = new WebSocket(SIGNALING_URL);
+  ws = new WebSocket(SIGNALING_URL + "?clientKey=" + encodeURIComponent(CLIENT_KEY));
 
   ws.addEventListener("open", () => {
     statusDot.classList.add("connected");
