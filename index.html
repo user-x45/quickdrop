@@ -875,6 +875,7 @@ function connect() {
 
   ws.addEventListener("close", () => {
     statusDot.classList.remove("connected");
+    clearAllPeers();
     if (intentionalClose) {
       statusText.textContent = "非表示のため切断しました";
       return;
@@ -900,14 +901,7 @@ function disconnect() {
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
     ws.close();
   }
-  connections.forEach((conn) => {
-    if (conn.incoming) {
-      markCardFailed(conn.incoming.card, `${conn.peerName}との接続が切断されました`);
-      conn.incoming = null;
-    }
-    conn.pc.close();
-  });
-  connections.clear();
+  clearAllPeers();
 }
 
 document.addEventListener("visibilitychange", () => {
@@ -961,6 +955,21 @@ function removePeer(id) {
     conn.pc.close();
     connections.delete(id);
   }
+}
+
+function clearAllPeers() {
+  peerNodeEls.forEach((el) => el.remove());
+  peerNodeEls.clear();
+  peers.clear();
+  connections.forEach((conn) => {
+    if (conn.incoming) {
+      markCardFailed(conn.incoming.card, `${conn.peerName}との接続が切断されました`);
+      conn.incoming = null;
+    }
+    conn.pc.close();
+  });
+  connections.clear();
+  emptyHint.style.display = "flex";
 }
 
 function nodeSize() {
