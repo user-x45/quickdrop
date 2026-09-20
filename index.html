@@ -752,7 +752,7 @@
   <div class="status-row">
     <span class="status-dot" id="statusDot"></span>
     <span id="statusText">接続しています…</span>
-    <span>／ あなたの名前は</span>
+    <span>／ あなたはこの場では</span>
     <span class="you-name" id="youName">—</span>
   </div>
 </header>
@@ -816,17 +816,6 @@ const SIGNALING_URL = (() => {
   return proto + "//quick-drop.user-x45.workers.dev/ws";
 })();
 
-function getClientKey() {
-  let key = sessionStorage.getItem("quickdrop-client-key");
-  if (!key) {
-    key = crypto.randomUUID();
-    sessionStorage.setItem("quickdrop-client-key", key);
-  }
-  return key;
-}
-
-const CLIENT_KEY = getClientKey();
-
 const CHUNK_SIZE = 16 * 1024;
 
 const ADJECTIVE_LIST = [
@@ -870,51 +859,20 @@ const toastText = document.getElementById("toastText");
 
 let intentionalClose = false;
 let reconnectTimer = null;
-let heartbeatTimer = null;
-let heartbeatTimeoutTimer = null;
-
-const HEARTBEAT_INTERVAL_MS = 5000;
-const HEARTBEAT_TIMEOUT_MS = 4000;
-
-function startHeartbeat() {
-  stopHeartbeat();
-  heartbeatTimer = setInterval(() => {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    try {
-      ws.send(JSON.stringify({ type: "ping" }));
-    } catch (err) {
-      return;
-    }
-    clearTimeout(heartbeatTimeoutTimer);
-    heartbeatTimeoutTimer = setTimeout(() => {
-      if (ws) ws.close();
-    }, HEARTBEAT_TIMEOUT_MS);
-  }, HEARTBEAT_INTERVAL_MS);
-}
-
-function stopHeartbeat() {
-  clearInterval(heartbeatTimer);
-  clearTimeout(heartbeatTimeoutTimer);
-  heartbeatTimer = null;
-  heartbeatTimeoutTimer = null;
-}
 
 function connect() {
-  if (document.hidden || !navigator.onLine) return;
+  if (document.hidden) return;
 
   intentionalClose = false;
-  ws = new WebSocket(SIGNALING_URL + "?clientKey=" + encodeURIComponent(CLIENT_KEY));
+  ws = new WebSocket(SIGNALING_URL);
 
   ws.addEventListener("open", () => {
     statusDot.classList.add("connected");
     statusText.textContent = "接続中";
-    startHeartbeat();
   });
 
   ws.addEventListener("close", () => {
     statusDot.classList.remove("connected");
-    stopHeartbeat();
-    clearAllPeers();
     if (intentionalClose) {
       statusText.textContent = "非表示のため切断しました";
       return;
@@ -930,10 +888,6 @@ function connect() {
 
   ws.addEventListener("message", (event) => {
     const data = JSON.parse(event.data);
-    if (data.type === "pong") {
-      clearTimeout(heartbeatTimeoutTimer);
-      return;
-    }
     handleSignalingMessage(data);
   });
 }
@@ -941,11 +895,17 @@ function connect() {
 function disconnect() {
   intentionalClose = true;
   clearTimeout(reconnectTimer);
-  stopHeartbeat();
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
     ws.close();
   }
-  clearAllPeers();
+  connections.forEach((conn) => {
+    if (conn.incoming) {
+      markCardFailed(conn.incoming.card, `${conn.peerName}との接続が切断されました`);
+      conn.incoming = null;
+    }
+    conn.pc.close();
+  });
+  connections.clear();
 }
 
 document.addEventListener("visibilitychange", () => {
@@ -954,16 +914,6 @@ document.addEventListener("visibilitychange", () => {
   } else {
     connect();
   }
-});
-
-window.addEventListener("offline", () => {
-  statusText.textContent = "ネットワークが切断されました";
-  statusDot.classList.remove("connected");
-  disconnect();
-});
-
-window.addEventListener("online", () => {
-  if (!document.hidden) connect();
 });
 
 function handleSignalingMessage(data) {
@@ -994,14 +944,10 @@ function removePeer(id) {
   const el = peerNodeEls.get(id);
   if (el) {
     el.classList.add("leaving");
+    setTimeout(() => el.remove(), 500);
     peerNodeEls.delete(id);
-    el.addEventListener("animationend", () => {
-      el.remove();
-      if (peers.size === 0) {
-        emptyHint.style.display = "flex";
-      }
-    }, { once: true });
-  } else if (peers.size === 0) {
+  }
+  if (peers.size === 0) {
     emptyHint.style.display = "flex";
   }
   const conn = connections.get(id);
@@ -1013,15 +959,6 @@ function removePeer(id) {
     conn.pc.close();
     connections.delete(id);
   }
-}
-
-function clearAllPeers() {
-  peers.clear();
-  peerNodeEls.forEach((el) => el.remove());
-  peerNodeEls.clear();
-  emptyHint.style.display = "flex";
-  connections.forEach((conn) => conn.pc.close());
-  connections.clear();
 }
 
 function nodeSize() {
