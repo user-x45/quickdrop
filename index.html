@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QuickDrop ― 同じ場所で、ファイルを渡す</title>
+<title>QuickDrop｜ブラウザですばやくファイルを共有</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2216%22%20fill=%22%23161F1B%22/%3E%3Cg%20transform=%22translate%2814%2012%29%20scale%280.07%29%22%3E%3Cpath%20fill=%22%237FE0B5%22%20d=%22M246.6%209.4c-12.5-12.5-32.8-12.5-45.3%200l-128%20128c-12.5%2012.5-12.5%2032.8%200%2045.3s32.8%2012.5%2045.3%200L192%20109.3%20192%20320c0%2017.7%2014.3%2032%2032%2032s32-14.3%2032-32l0-210.7%2073.4%2073.4c12.5%2012.5%2032.8%2012.5%2045.3%200s12.5-32.8%200-45.3l-128-128zM64%20352c0-17.7-14.3-32-32-32s-32%2014.3-32%2032l0%2064c0%2053%2043%2096%2096%2096l256%200c53%200%2096-43%2096-96l0-64c0-17.7-14.3-32-32-32s-32%2014.3-32%2032l0%2064c0%2017.7-14.3%2032-32%2032L96%20448c-17.7%200-32-14.3-32-32l0-64z%22/%3E%3C/g%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2216%22%20fill=%22%23161F1B%22/%3E%3Cg%20transform=%22translate%2814%2012%29%20scale%280.07%29%22%3E%3Cpath%20fill=%22%237FE0B5%22%20d=%22M246.6%209.4c-12.5-12.5-32.8-12.5-45.3%200l-128%20128c-12.5%2012.5-12.5%2032.8%200%2045.3s32.8%2012.5%2045.3%200L192%20109.3%20192%20320c0%2017.7%2014.3%2032%2032%2032s32-14.3%2032-32l0-210.7%2073.4%2073.4c12.5%2012.5%2032.8%2012.5%2045.3%200s12.5-32.8%200-45.3l-128-128zM64%20352c0-17.7-14.3-32-32-32s-32%2014.3-32%2032l0%2064c0%2053%2043%2096%2096%2096l256%200c53%200%2096-43%2096-96l0-64c0-17.7-14.3-32-32-32s-32%2014.3-32%2032l0%2064c0%2017.7-14.3%2032-32%2032L96%20448c-17.7%200-32-14.3-32-32l0-64z%22/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -53,6 +55,15 @@
     font-weight: 700;
     margin: 0;
     letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  header h1 .site-icon {
+    font-size: 26px;
+    color: var(--accent);
+    flex-shrink: 0;
   }
 
   header p {
@@ -749,7 +760,10 @@
 <body>
 
 <header>
-  <h1>QuickDrop</h1>
+  <h1>
+    <i class="fa-solid fa-arrow-up-from-bracket site-icon" aria-hidden="true"></i>
+    <span>QuickDrop</span>
+  </h1>
   <p>このページを開いている、同じネットワーク内の端末が浮かび上がります。選んで、そのままファイルを送れます。</p>
   <div class="status-row">
     <span class="status-dot" id="statusDot"></span>
