@@ -861,36 +861,116 @@ const toastText = document.getElementById("toastText");
 
 let intentionalClose = false;
 let reconnectTimer = null;
+let heartbeatTimer = null;
+let watchdogTimer = null;
+let lastServerMessageAt = 0;
+let reconnectAttempts = 0;
+
+const HEARTBEAT_INTERVAL_MS = 4000;
+const SERVER_TIMEOUT_MS = 10000;
+const WATCHDOG_INTERVAL_MS = 2000;
+
+function stopMonitors() {
+  clearInterval(heartbeatTimer);
+  clearInterval(watchdogTimer);
+  heartbeatTimer = null;
+  watchdogTimer = null;
+}
+
+function startMonitors(socket) {
+  stopMonitors();
+  lastServerMessageAt = Date.now();
+
+  heartbeatTimer = setInterval(() => {
+    if (ws !== socket || socket.readyState !== WebSocket.OPEN) return;
+    try {
+      socket.send(JSON.stringify({ type: "ping", t: Date.now() }));
+    } catch (err) {
+      socket.close();
+    }
+  }, HEARTBEAT_INTERVAL_MS);
+
+  watchdogTimer = setInterval(() => {
+    if (ws !== socket || socket.readyState !== WebSocket.OPEN) return;
+    if (Date.now() - lastServerMessageAt > SERVER_TIMEOUT_MS) {
+      socket.close();
+    }
+  }, WATCHDOG_INTERVAL_MS);
+}
+
+function clearAllPeers() {
+  Array.from(peers.keys()).forEach((id) => removePeer(id));
+  peers.clear();
+}
+
+function closeAllConnections() {
+  connections.forEach((conn) => {
+    if (conn.incoming) {
+      markCardFailed(conn.incoming.card, `${conn.peerName}との接続が切断されました`);
+      conn.incoming = null;
+    }
+    try {
+      conn.pc.close();
+    } catch (err) {}
+  });
+  connections.clear();
+}
+
+function scheduleReconnect() {
+  clearTimeout(reconnectTimer);
+  const delay = Math.min(500 * Math.pow(2, reconnectAttempts), 5000);
+  reconnectAttempts += 1;
+  reconnectTimer = setTimeout(connect, delay);
+}
 
 function connect() {
   if (document.hidden) return;
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
 
   intentionalClose = false;
-  ws = new WebSocket(SIGNALING_URL);
+  const socket = new WebSocket(SIGNALING_URL);
+  ws = socket;
+  statusText.textContent = "接続しています…";
 
-  ws.addEventListener("open", () => {
+  socket.addEventListener("open", () => {
+    if (ws !== socket) return;
+    reconnectAttempts = 0;
     statusDot.classList.add("connected");
     statusText.textContent = "接続中";
+    startMonitors(socket);
   });
 
-  ws.addEventListener("close", () => {
+  socket.addEventListener("close", () => {
+    if (ws !== socket) return;
+    stopMonitors();
     statusDot.classList.remove("connected");
+    youNameEl.textContent = "";
+    myId = null;
+    myName = null;
+    closeAllConnections();
     clearAllPeers();
     if (intentionalClose) {
       statusText.textContent = "非表示のため切断しました";
       return;
     }
     statusText.textContent = "切断されました。再接続しています…";
-    clearTimeout(reconnectTimer);
-    reconnectTimer = setTimeout(connect, 2000);
+    scheduleReconnect();
   });
 
-  ws.addEventListener("error", () => {
-    ws.close();
+  socket.addEventListener("error", () => {
+    if (ws !== socket) return;
+    socket.close();
   });
 
-  ws.addEventListener("message", (event) => {
-    const data = JSON.parse(event.data);
+  socket.addEventListener("message", (event) => {
+    if (ws !== socket) return;
+    lastServerMessageAt = Date.now();
+    let data;
+    try {
+      data = JSON.parse(event.data);
+    } catch (err) {
+      return;
+    }
     handleSignalingMessage(data);
   });
 }
@@ -898,9 +978,17 @@ function connect() {
 function disconnect() {
   intentionalClose = true;
   clearTimeout(reconnectTimer);
-  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
-    ws.close();
+  stopMonitors();
+  const socket = ws;
+  if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+    socket.close();
   }
+  statusDot.classList.remove("connected");
+  statusText.textContent = "非表示のため切断しました";
+  youNameEl.textContent = "";
+  myId = null;
+  myName = null;
+  closeAllConnections();
   clearAllPeers();
 }
 
@@ -908,16 +996,64 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     disconnect();
   } else {
+    reconnectAttempts = 0;
     connect();
   }
 });
 
+window.addEventListener("pagehide", () => {
+  intentionalClose = true;
+  clearTimeout(reconnectTimer);
+  stopMonitors();
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+    ws.close(1000, "pagehide");
+  }
+});
+
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted && !document.hidden) {
+    reconnectAttempts = 0;
+    connect();
+  }
+});
+
+window.addEventListener("offline", () => {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.close();
+  } else {
+    stopMonitors();
+    statusDot.classList.remove("connected");
+    statusText.textContent = "オフラインです";
+    closeAllConnections();
+    clearAllPeers();
+  }
+});
+
+window.addEventListener("online", () => {
+  clearTimeout(reconnectTimer);
+  reconnectAttempts = 0;
+  connect();
+});
+
 function handleSignalingMessage(data) {
+  if (data.type === "ping") {
+    try {
+      ws.send(JSON.stringify({ type: "pong" }));
+    } catch (err) {}
+    return;
+  }
+  if (data.type === "pong") {
+    return;
+  }
   if (data.type === "welcome") {
     myId = data.id;
     myName = data.name;
     youNameEl.textContent = myName;
   } else if (data.type === "peer-list") {
+    const liveIds = new Set(data.peers.map((p) => p.id));
+    Array.from(peers.keys()).forEach((id) => {
+      if (!liveIds.has(id)) removePeer(id);
+    });
     data.peers.forEach((p) => addPeer(p.id, p.name));
   } else if (data.type === "peer-joined") {
     addPeer(data.id, data.name);
@@ -955,21 +1091,6 @@ function removePeer(id) {
     conn.pc.close();
     connections.delete(id);
   }
-}
-
-function clearAllPeers() {
-  peerNodeEls.forEach((el) => el.remove());
-  peerNodeEls.clear();
-  peers.clear();
-  connections.forEach((conn) => {
-    if (conn.incoming) {
-      markCardFailed(conn.incoming.card, `${conn.peerName}との接続が切断されました`);
-      conn.incoming = null;
-    }
-    conn.pc.close();
-  });
-  connections.clear();
-  emptyHint.style.display = "flex";
 }
 
 function nodeSize() {
@@ -1212,6 +1333,7 @@ function getOrCreateConnection(peerId, peerName) {
 }
 
 function sendSignal(to, payload) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
   ws.send(JSON.stringify({ type: "signal", to, payload }));
 }
 
