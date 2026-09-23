@@ -1,0 +1,20 @@
+{
+  "name": "SimpleDrop｜ブラウザでファイルを共有",
+  "short_name": "SimpleDrop",
+  "description": "同じネットワーク内の端末に、ブラウザからすばやくファイルを送れます。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0F1512",
+  "theme_color": "#0F1512",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
