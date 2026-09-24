@@ -145,6 +145,24 @@
   .you-name {
     color: var(--accent);
     font-weight: 500;
+    cursor: pointer;
+    border-bottom: 1px dashed var(--accent-dim);
+  }
+
+  .you-name:hover {
+    opacity: 0.85;
+  }
+
+  .name-input {
+    background: var(--bg);
+    color: var(--text);
+    border: 1.5px solid var(--accent-dim);
+    border-radius: 8px;
+    padding: 2px 8px;
+    font-family: inherit;
+    font-size: 15px;
+    outline: none;
+    width: 140px;
   }
 
   main {
@@ -815,7 +833,7 @@
     <span class="status-dot" id="statusDot"></span>
     <span id="statusText">接続しています…</span>
     <span>／ あなたの名前は</span>
-    <span class="you-name" id="youName">—</span>
+    <span class="you-name" id="youName" title="タップして名前を変更">—</span>
   </div>
 </header>
 
@@ -888,6 +906,8 @@ const ADJECTIVE_LIST = [
 let ws = null;
 let myId = null;
 let myName = null;
+const NAME_STORAGE_KEY = "simpledrop-my-name";
+let customName = localStorage.getItem(NAME_STORAGE_KEY);
 const peers = new Map();
 const peerNodeEls = new Map();
 let activeTargetId = null;
@@ -895,6 +915,45 @@ let activeTargetId = null;
 const statusDot = document.getElementById("statusDot");
 const statusText = document.getElementById("statusText");
 const youNameEl = document.getElementById("youName");
+
+youNameEl.addEventListener("click", () => {
+  if (youNameEl.querySelector("input")) return;
+  const current = myName || "";
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "name-input";
+  input.maxLength = 20;
+  input.value = current;
+  youNameEl.textContent = "";
+  youNameEl.appendChild(input);
+  input.focus();
+  input.select();
+
+  const commit = () => {
+    const value = input.value.trim();
+    youNameEl.textContent = myName || "—";
+    if (!value || value === myName) return;
+    customName = value;
+    localStorage.setItem(NAME_STORAGE_KEY, value);
+    myName = value;
+    youNameEl.textContent = value;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(JSON.stringify({ type: "rename", name: value }));
+      } catch (err) {}
+    }
+    showToast("名前を変更しました");
+  };
+
+  input.addEventListener("blur", commit);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") input.blur();
+    if (e.key === "Escape") {
+      input.value = current;
+      input.blur();
+    }
+  });
+});
 const field = document.getElementById("field");
 const emptyHint = document.getElementById("emptyHint");
 const logEl = document.getElementById("log");
@@ -1107,8 +1166,13 @@ function handleSignalingMessage(data) {
   }
   if (data.type === "welcome") {
     myId = data.id;
-    myName = data.name;
+    myName = customName || data.name;
     youNameEl.textContent = myName;
+    if (customName) {
+      try {
+        ws.send(JSON.stringify({ type: "rename", name: customName }));
+      } catch (err) {}
+    }
   } else if (data.type === "peer-list") {
     const liveIds = new Set(data.peers.map((p) => p.id));
     Array.from(peers.keys()).forEach((id) => {
@@ -1119,6 +1183,8 @@ function handleSignalingMessage(data) {
     addPeer(data.id, data.name);
   } else if (data.type === "peer-left") {
     removePeer(data.id);
+  } else if (data.type === "peer-renamed") {
+    renamePeer(data.id, data.name);
   } else if (data.type === "signal") {
     handlePeerSignal(data.from, data.fromName, data.payload);
   }
@@ -1129,6 +1195,19 @@ function addPeer(id, name) {
   peers.set(id, { id, name });
   renderPeerNode(id, name);
   emptyHint.style.display = "none";
+}
+
+function renamePeer(id, name) {
+  const peer = peers.get(id);
+  if (!peer) return;
+  peer.name = name;
+  const el = peerNodeEls.get(id);
+  if (el) {
+    const nameEl = el.querySelector(".peer-name");
+    if (nameEl) nameEl.textContent = name;
+  }
+  const conn = connections.get(id);
+  if (conn) conn.peerName = name;
 }
 
 function removePeer(id) {
