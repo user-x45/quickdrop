@@ -906,6 +906,7 @@ const ADJECTIVE_LIST = [
 let ws = null;
 let myId = null;
 let myName = null;
+let serverAssignedName = null;
 const NAME_STORAGE_KEY = "simpledrop-my-name";
 let customName = localStorage.getItem(NAME_STORAGE_KEY);
 const peers = new Map();
@@ -931,8 +932,23 @@ youNameEl.addEventListener("click", () => {
 
   const commit = () => {
     const value = input.value.trim();
+    if (!value) {
+      localStorage.removeItem(NAME_STORAGE_KEY);
+      customName = null;
+      const resetName = serverAssignedName || "—";
+      const changed = resetName !== myName;
+      myName = resetName;
+      youNameEl.textContent = myName;
+      if (changed && ws && ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(JSON.stringify({ type: "rename", name: resetName }));
+        } catch (err) {}
+      }
+      showToast("名前をリセットしました");
+      return;
+    }
     youNameEl.textContent = myName || "—";
-    if (!value || value === myName) return;
+    if (value === myName) return;
     customName = value;
     localStorage.setItem(NAME_STORAGE_KEY, value);
     myName = value;
@@ -1166,6 +1182,7 @@ function handleSignalingMessage(data) {
   }
   if (data.type === "welcome") {
     myId = data.id;
+    serverAssignedName = data.name;
     myName = customName || data.name;
     youNameEl.textContent = myName;
     if (customName) {
