@@ -1044,6 +1044,10 @@ function closeAllConnections() {
       markCardFailed(conn.incoming.card, `${conn.peerName}との接続が切断されました`);
       conn.incoming = null;
     }
+    if (conn.outgoing) {
+      markCardFailed(conn.outgoing.card, `${conn.peerName}との接続が切断されました`);
+      conn.outgoing = null;
+    }
     try {
       conn.pc.close();
     } catch (err) {}
@@ -1243,6 +1247,10 @@ function removePeer(id) {
     if (conn.incoming) {
       markCardFailed(conn.incoming.card, `${conn.peerName}との接続が切断されました`);
       conn.incoming = null;
+    }
+    if (conn.outgoing) {
+      markCardFailed(conn.outgoing.card, `${conn.peerName}との接続が切断されました`);
+      conn.outgoing = null;
     }
     conn.pc.close();
     connections.delete(id);
@@ -1471,7 +1479,7 @@ function getOrCreateConnection(peerId, peerName) {
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
   });
 
-  const entry = { pc, dataChannel: null, peerName, incoming: null };
+  const entry = { pc, dataChannel: null, peerName, incoming: null, outgoing: null };
   connections.set(peerId, entry);
 
   pc.addEventListener("icecandidate", (event) => {
@@ -1562,18 +1570,32 @@ async function sendMessage(peerId, text) {
 function beginSending(entry, file, card) {
   const dc = entry.dataChannel;
   const fill = card.querySelector(".progress-fill");
-  dc.send(JSON.stringify({ meta: true, name: file.name, size: file.size, mime: file.type }));
+  entry.outgoing = { card };
 
   let offset = 0;
   const reader = new FileReader();
+
+  function fail(message) {
+    entry.outgoing = null;
+    markCardFailed(card, message);
+  }
 
   function readSlice() {
     const slice = file.slice(offset, offset + CHUNK_SIZE);
     reader.readAsArrayBuffer(slice);
   }
 
+  reader.addEventListener("error", () => {
+    fail("ファイルの読み込みに失敗しました");
+  });
+
   reader.addEventListener("load", () => {
-    dc.send(reader.result);
+    try {
+      dc.send(reader.result);
+    } catch (err) {
+      fail(`${entry.peerName}への送信に失敗しました`);
+      return;
+    }
     offset += reader.result.byteLength;
     const pct = Math.min(100, Math.round((offset / file.size) * 100));
     fill.style.width = pct + "%";
@@ -1584,9 +1606,17 @@ function beginSending(entry, file, card) {
         readSlice();
       }
     } else {
+      entry.outgoing = null;
       card.querySelector(".fmeta").textContent = "送信完了";
     }
   });
+
+  try {
+    dc.send(JSON.stringify({ meta: true, name: file.name, size: file.size, mime: file.type }));
+  } catch (err) {
+    fail(`${entry.peerName}への送信に失敗しました`);
+    return;
+  }
 
   readSlice();
 }
@@ -1615,9 +1645,15 @@ function setupDataChannel(entry, peerId) {
 
   const markInterrupted = () => {
     const inc = entry.incoming;
-    if (!inc) return;
-    entry.incoming = null;
-    markCardFailed(inc.card, `${entry.peerName}との接続が切断されました`);
+    if (inc) {
+      entry.incoming = null;
+      markCardFailed(inc.card, `${entry.peerName}との接続が切断されました`);
+    }
+    const out = entry.outgoing;
+    if (out) {
+      entry.outgoing = null;
+      markCardFailed(out.card, `${entry.peerName}との接続が切断されました`);
+    }
   };
 
   dc.addEventListener("close", markInterrupted);
