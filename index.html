@@ -896,21 +896,7 @@ const SIGNALING_URL = (() => {
   return proto + "/simple-drop.user-x45.workers.dev/ws";
 })();
 
-const UPLOAD_IMAGE_URL = (() => {
-  const proto = location.protocol === "https:" ? "https:" : "http:";
-  return proto + "/simple-drop.user-x45.workers.dev/upload-image";
-})();
-
 const CHUNK_SIZE = 16 * 1024;
-
-const IMAGE_EXTS_CLIENT = ["jpg", "jpeg", "png", "gif", "webp", "avif", "bmp", "svg", "heic", "heif"];
-
-function isImageFile(file) {
-  if (file.type && file.type.startsWith("image/")) return true;
-  const i = file.name.lastIndexOf(".");
-  const ext = i === -1 ? "" : file.name.slice(i + 1).toLowerCase();
-  return IMAGE_EXTS_CLIENT.includes(ext);
-}
 
 const ADJECTIVE_LIST = [
   "静かな", "素早い", "明るい", "涼しい", "温かい", "小さな", "大きな", "遠い",
@@ -1222,38 +1208,7 @@ function handleSignalingMessage(data) {
     renamePeer(data.id, data.name);
   } else if (data.type === "signal") {
     handlePeerSignal(data.from, data.fromName, data.payload);
-  } else if (data.type === "incoming-image") {
-    handleIncomingImage(data);
   }
-}
-
-function base64ToBlob(base64, mime) {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return new Blob([bytes], { type: mime || "application/octet-stream" });
-}
-
-function handleIncomingImage(data) {
-  const card = createTransferCard(data.name, data.size, `${data.fromName}から受信完了`, false, data.mime);
-  const blob = base64ToBlob(data.data, data.mime);
-  attachPreview(card, data.name, data.mime, blob);
-
-  const url = URL.createObjectURL(blob);
-  const dlBtn = document.createElement("button");
-  dlBtn.className = "dl-btn";
-  dlBtn.innerHTML = '<i class="fa-solid fa-download"></i> 保存する';
-  dlBtn.addEventListener("click", () => {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = data.name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  });
-  card.appendChild(dlBtn);
 }
 
 function addPeer(id, name) {
@@ -1595,10 +1550,6 @@ function ensureChannel(peerId) {
 }
 
 async function sendFile(peerId, file) {
-  if (isImageFile(file)) {
-    await sendImageViaServer(peerId, file);
-    return;
-  }
   let entry;
   try {
     entry = await ensureChannel(peerId);
@@ -1609,52 +1560,6 @@ async function sendFile(peerId, file) {
   const card = createTransferCard(file.name, file.size, "送信中", true, file.type);
   attachPreview(card, file.name, file.type, file);
   beginSending(entry, file, card);
-}
-
-async function sendImageViaServer(peerId, file) {
-  if (!myId) {
-    showToast("接続できていません", true);
-    return;
-  }
-  const card = createTransferCard(file.name, file.size, "確認中", false, file.type);
-  attachPreview(card, file.name, file.type, file);
-
-  try {
-    const res = await fetch(UPLOAD_IMAGE_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/octet-stream",
-        "X-Target-Id": peerId,
-        "X-Sender-Id": myId,
-        "X-File-Name": encodeURIComponent(file.name),
-        "X-File-Mime": file.type || "application/octet-stream",
-      },
-      body: file,
-    });
-
-    if (res.ok) {
-      card.querySelector(".fmeta").textContent = "送信完了";
-      return;
-    }
-
-    let reason = "";
-    try {
-      const body = await res.json();
-      reason = body.reason || "";
-    } catch (err) {}
-
-    if (reason === "unsafe") {
-      markCardFailed(card, "不適切な内容と判定されたため送信できませんでした");
-    } else if (reason === "size") {
-      markCardFailed(card, "ファイルサイズが大きすぎます");
-    } else if (reason === "peer-not-found") {
-      markCardFailed(card, "相手が見つかりませんでした");
-    } else {
-      markCardFailed(card, "送信に失敗しました");
-    }
-  } catch (err) {
-    markCardFailed(card, "送信に失敗しました");
-  }
 }
 
 async function sendMessage(peerId, text) {
