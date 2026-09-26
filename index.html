@@ -166,6 +166,25 @@
     width: 140px;
   }
 
+  .transfer-warning {
+    flex-shrink: 0;
+    margin: 4px 24px 0;
+    padding: 10px 16px;
+    border-radius: 10px;
+    background: rgba(var(--accent-rgb), 0.12);
+    border: 1px solid var(--accent-dim);
+    color: var(--text);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .transfer-warning i {
+    color: var(--warn);
+    flex-shrink: 0;
+  }
+
   main {
     flex: 1 1 0;
     min-height: 0;
@@ -937,6 +956,11 @@
   </div>
 </header>
 
+<div class="transfer-warning" id="transferWarning" role="status" hidden>
+  <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+  <span>送受信中です。完了するまでこのページを離れないでください。</span>
+</div>
+
 <main>
   <div id="field">
     <div class="empty-hint" id="emptyHint">
@@ -1672,6 +1696,26 @@ dropZone.addEventListener("drop", (e) => {
 });
 
 const connections = new Map();
+let activeTransferCount = 0;
+const transferWarning = document.getElementById("transferWarning");
+
+function incActiveTransfers() {
+  activeTransferCount++;
+  transferWarning.hidden = false;
+}
+
+function decActiveTransfers() {
+  activeTransferCount = Math.max(0, activeTransferCount - 1);
+  if (activeTransferCount === 0) transferWarning.hidden = true;
+}
+
+window.addEventListener("beforeunload", (e) => {
+  if (activeTransferCount > 0) {
+    e.preventDefault();
+    e.returnValue = "";
+    return "";
+  }
+});
 
 function getOrCreateConnection(peerId, peerName) {
   if (connections.has(peerId)) return connections.get(peerId);
@@ -1772,12 +1816,14 @@ function beginSending(entry, file, card) {
   const dc = entry.dataChannel;
   const fill = card.querySelector(".progress-fill");
   entry.outgoing = { card };
+  incActiveTransfers();
 
   let offset = 0;
   const reader = new FileReader();
 
   function fail(message) {
     entry.outgoing = null;
+    decActiveTransfers();
     markCardFailed(card, message);
   }
 
@@ -1808,6 +1854,7 @@ function beginSending(entry, file, card) {
       }
     } else {
       entry.outgoing = null;
+      decActiveTransfers();
       card.querySelector(".fmeta").textContent = "送信完了";
     }
   });
@@ -1848,11 +1895,13 @@ function setupDataChannel(entry, peerId) {
     const inc = entry.incoming;
     if (inc) {
       entry.incoming = null;
+      decActiveTransfers();
       markCardFailed(inc.card, `${entry.peerName}との接続が切断されました`);
     }
     const out = entry.outgoing;
     if (out) {
       entry.outgoing = null;
+      decActiveTransfers();
       markCardFailed(out.card, `${entry.peerName}との接続が切断されました`);
     }
   };
@@ -1881,6 +1930,7 @@ function setupDataChannel(entry, peerId) {
           received: 0,
           card: createTransferCard(meta.name, meta.size, `${entry.peerName}から受信中`, true, meta.mime),
         };
+        incActiveTransfers();
       }
       return;
     }
@@ -1893,6 +1943,7 @@ function setupDataChannel(entry, peerId) {
     if (inc.received >= inc.size) {
       finalizeIncoming(inc, entry.peerName);
       entry.incoming = null;
+      decActiveTransfers();
     }
   });
 }
