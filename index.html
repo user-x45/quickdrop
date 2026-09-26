@@ -562,9 +562,19 @@
       opacity: 1;
     }
 
-    .sheet-handle {
+    .sheet-header {
       display: none;
     }
+  }
+
+  .sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: -8px -8px 10px;
+    padding: 14px 8px;
+    touch-action: none;
+    cursor: grab;
   }
 
   .sheet-handle {
@@ -572,14 +582,6 @@
     height: 4px;
     background: var(--line);
     border-radius: 2px;
-    margin: 0 auto 18px;
-    touch-action: none;
-    cursor: grab;
-    padding: 10px 24px;
-    margin-top: -10px;
-    margin-bottom: 8px;
-    background-clip: content-box;
-    box-sizing: content-box;
   }
 
   .sheet h2 {
@@ -965,7 +967,7 @@
 
 <div class="overlay" id="qrOverlay">
   <div class="sheet qr-sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-handle"></div></div>
     <h2>QRコードを表示</h2>
     <p class="desc">他の端末のカメラで読み取ると、このページが開きます。</p>
     <div class="qr-box" id="qrBox"></div>
@@ -976,7 +978,7 @@
 
 <div class="overlay" id="overlay">
   <div class="sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-handle"></div></div>
     <h2><span class="to-name" id="sheetToName" style="white-space:nowrap">端末</span><span style="white-space:nowrap" id="sheetTitleTail">にファイルを送る</span></h2>
     <div class="sheet-tabs">
       <button class="sheet-tab active" id="tabFile" type="button"><i class="fa-regular fa-file"></i>ファイル</button>
@@ -2191,8 +2193,8 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-bindSheetSwipeToClose(document.querySelector("#overlay .sheet-handle"), overlay.querySelector(".sheet"), closeUploadSheet);
-bindSheetSwipeToClose(document.querySelector("#qrOverlay .sheet-handle"), qrOverlay.querySelector(".sheet"), closeQr);
+bindSheetSwipeToClose(document.querySelector("#overlay .sheet-header"), overlay.querySelector(".sheet"), closeUploadSheet);
+bindSheetSwipeToClose(document.querySelector("#qrOverlay .sheet-header"), qrOverlay.querySelector(".sheet"), closeQr);
 
 if (!document.hidden) connect();
 </script>
