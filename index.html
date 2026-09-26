@@ -1005,7 +1005,7 @@
 <script>
 const SIGNALING_URL = (() => {
   const proto = location.protocol === "https:" ? "wss:" : "ws:";
-  return proto + "/simple-drop.user-x45.workers.dev/ws";
+  return proto + "//simple-drop.user-x45.workers.dev/ws";
 })();
 
 const CHUNK_SIZE = 16 * 1024;
@@ -1172,8 +1172,6 @@ function bindSheetSwipeToClose(handleEl, sheetEl, closeFn) {
   });
 }
 
-bindSheetSwipeToClose(document.querySelector("#overlay .sheet-handle"), overlay.querySelector(".sheet"), closeUploadSheet);
-bindSheetSwipeToClose(document.querySelector("#qrOverlay .sheet-handle"), qrOverlay.querySelector(".sheet"), closeQr);
 const overlay = document.getElementById("overlay");
 const sheetToName = document.getElementById("sheetToName");
 const dropZone = document.getElementById("dropZone");
@@ -2192,6 +2190,9 @@ function escapeHtml(str) {
   div.textContent = str;
   return div.innerHTML;
 }
+
+bindSheetSwipeToClose(document.querySelector("#overlay .sheet-handle"), overlay.querySelector(".sheet"), closeUploadSheet);
+bindSheetSwipeToClose(document.querySelector("#qrOverlay .sheet-handle"), qrOverlay.querySelector(".sheet"), closeQr);
 
 if (!document.hidden) connect();
 </script>
